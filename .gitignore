@@ -3,3 +3,8 @@ __pycache__/
 
 # DON'T UPLOAD API TOKEN
 bot_token.py
+
+# Data Files
+
+*_gamerwords.*
+*_quotes.*
