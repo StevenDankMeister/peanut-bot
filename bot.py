@@ -31,8 +31,9 @@ def get_gamer_moment_message(guild_id, user_name):
     f.close()
     return gamer_moment_sentence 
 
-def add_moment(strings, guild_id):
+def add_gamer_word(strings, guild_id):
     f = open_gamer_words_file(guild_id, 'a+')
+    
     for string in strings:
         f.write(string.strip())
         f.write('\n')
@@ -64,7 +65,7 @@ def remove_duplicate_gamer_words(guild):
     # remove duplicates
     words = list(dict.fromkeys(words))
 
-    add_moment(words, guild.id)
+    add_gamer_word(words, guild.id)
 
 def get_username_format(user):
     return '{}#{}'.format(user.name, user.discriminator).lower()
@@ -82,7 +83,7 @@ def remove_gamer_word(guild_id, word_to_remove):
     f.truncate(0)
     f.close()
     
-    add_moment(words, guild_id)
+    add_gamer_word(words, guild_id)
 
 class GamerMoments(commands.Cog, name='Gamer Moments'):
     def __init__(self, bot):
@@ -91,7 +92,7 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
     @commands.command()
     async def add(self, ctx, *args):
         """Add a gamer word"""
-        add_moment(args, ctx.guild.id)
+        add_gamer_word(args, ctx.guild.id)
         await ctx.send('Added {} new gamer words: {}'.format(len(args), ', '.join(args)))
 
     @commands.command()
