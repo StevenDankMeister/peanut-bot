@@ -31,8 +31,8 @@ def get_gamer_moment_message(guild_id, user_name):
     f.close()
     return gamer_moment_sentence 
 
-def add_moment(strings, guild):
-    f = open_gamer_words_file(guild.id, 'a+')
+def add_moment(strings, guild_id):
+    f = open_gamer_words_file(guild_id, 'a+')
     for string in strings:
         f.write(string.strip())
         f.write('\n')
@@ -59,14 +59,30 @@ def remove_duplicate_gamer_words(guild):
         words.append(line.strip())
     # clear the entire file
     f.truncate(0)
+    f.close()
 
     # remove duplicates
     words = list(dict.fromkeys(words))
 
-    add_moment(words, guild)
+    add_moment(words, guild.id)
 
 def get_username_format(user):
-    return '{}#{}'.format(user.name, user.discriminator)
+    return '{}#{}'.format(user.name, user.discriminator).lower()
+
+def remove_gamer_word(guild_id, word_to_remove):
+    f = open_gamer_words_file(guild_id, 'r')
+
+    words = []
+    for word in f:
+        if word.strip() != word_to_remove: 
+            words.append(word.strip())
+
+    f.close()
+    f = open_gamer_words_file(guild_id, 'w+')
+    f.truncate(0)
+    f.close()
+    
+    add_moment(words, guild_id)
 
 class GamerMoments(commands.Cog, name='Gamer Moments'):
     def __init__(self, bot):
@@ -75,8 +91,15 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
     @commands.command()
     async def add(self, ctx, *args):
         """Add a gamer word"""
-        add_moment(args, ctx.guild)
+        add_moment(args, ctx.guild.id)
         await ctx.send('Added {} new gamer words: {}'.format(len(args), ', '.join(args)))
+
+    @commands.command()
+    async def remove(self, ctx, arg):
+        """Remove a gamer word"""
+        remove_duplicate_gamer_words(ctx.guild)
+        remove_gamer_word(ctx.guild.id, arg)
+        await ctx.send('Removed gamer word: {}'.format(arg))
 
     @commands.command()
     async def gamerwords(self, ctx):
@@ -89,7 +112,7 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
         quote = ''
         if len(args) > 0:
             user_name = args[0]
-            quote = get_gamer_moment_message(ctx.guild.id, user_name)
+            quote = get_gamer_moment_message(ctx.guild.id, user_name.lower())
         else:
             quote = get_gamer_moment_message(ctx.guild.id, None)
 
@@ -97,12 +120,12 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
 
     @commands.command()
     async def makegamermoments(self, ctx):
-        """Create a list of gamer moments. Messages are retrieved from the channel the command is run on. Expensive operation."""
+        """Create a list of gamer moments. Messages are retrieved from the channel the command is run on. Expensive operation. Overwrites previous gamer moments."""
         amount = 50000
         remove_duplicate_gamer_words(ctx.guild)
         await ctx.send('Making epic gamer moments... Please wait. I will tell you when I am done, hihi :). That is if I don\'t crash... :). You can still use me while I am working, but I may be slow :(')
         channel_messages = await ctx.history(limit=amount).flatten()
-        await ctx.send('Status: I have now received {} messages :). I humbly ask of you to wait just a little longer... Please... :). Also, please refrain from addings words until I have finished. :)'.format(len(channel_messages)))
+        await ctx.send('Status: I have now received {} messages :). I humbly ask of you to wait just a little longer... Please... :). Also, please refrain from adding or removing words until I have finished. :)'.format(len(channel_messages)))
         data = {}
         gamer_moments_count = 0
         gamermoments_file = open_gamer_moments_file(ctx.guild.id, 'w+')
@@ -137,6 +160,11 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
         gamermoments_file.close()
 
         await ctx.send('できました！ {} gamer moments have been created :)'.format(gamer_moments_count))
+
+@bot.command()
+async def github(ctx):
+    """Posts the GitHub repository for this bot."""
+    await ctx.send('You can find me at: https://github.com/StevenDankMeister/peanut-bot >_<')
 
 @bot.event
 async def on_command_error(ctx, exception):
