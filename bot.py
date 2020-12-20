@@ -206,13 +206,16 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
             
             for word in gamerwords_file:
                 if word.strip() in message.content:
-                    gamer_moments_count += 1
                     user = message.author
                     
                     string = '\"{}\" - {} {}/{}-{}'.format(message.content, message.author.name, message.created_at.day, message.created_at.month, message.created_at.year)
                     if get_username_format(user) not in data:
                         data[get_username_format(user)] = []
                     
+                    if string in data[get_username_format(user)]:
+                        continue
+
+                    gamer_moments_count += 1
                     data[get_username_format(user)].append(string)
             
             gamerwords_file.close()
