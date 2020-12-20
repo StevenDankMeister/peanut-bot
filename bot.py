@@ -2,67 +2,84 @@ import random
 import discord
 import json
 import bot_token as tokens
+import re
 from discord.ext import commands
 from datetime import datetime
 
 bot = commands.Bot(command_prefix='>')
 
-def get_gamer_moment_message(guild, user_id):
-    with open('./{}_quotes.json'.format(str(guild.id)), 'r', encoding='utf-8') as f:
-        data = json.load(f)
-        if user_id == None:
-            random_user_id = random.choice(list(data))
-            return random.choice(data[random_user_id])
-        else:
-            return random.choice(data[user_id])
-            
+def open_gamer_moments_file(guild_id, mode):
+    return open('./{}_quotes.json'.format(str(guild_id)), mode, encoding='utf-8')
 
+def open_gamer_words_file(guild_id, mode):
+    return open('./{}_gamerwords.txt'.format(str(guild_id)), mode, encoding='utf-8')
+
+def get_gamer_moment_message(guild_id, user_id):
+    f = open_gamer_moments_file(guild_id, 'r')
+
+    moments_dic = json.load(f)
+
+    gamer_moment_sentence = ''
+
+    if user_id == None:
+        random_user_id = random.choice(list(moments_dic))
+        gamer_moment_sentence = random.choice(moments_dic[random_user_id])
+    else:
+        gamer_moment_sentence = random.choice(moments_dic[user_id]) 
+
+    f.close()
+    return gamer_moment_sentence 
 
 def add_moment(strings, guild):
-    with open('./{}_gamerwords.txt'.format(str(guild.id)), 'a+', encoding='utf-8') as f:
-        for string in strings:
-            f.write(string.strip())
-            f.write('\n')
+    f = open_gamer_words_file(guild.id, 'a+')
+    for string in strings:
+        f.write(string.strip())
+        f.write('\n')
+
+    f.close()
 
 def get_all_gamer_words(guild):
     gamer_words = []
-    with open('./{}_gamerwords.txt'.format(str(guild.id)), 'r', encoding='utf-8') as f:
-        for line in f:
-            gamer_words.append(line.strip())
+    f = open_gamer_words_file(guild.id, 'r')
 
+    for line in f:
+        gamer_words.append(line.strip())
+    
+    f.close()
+    
     return gamer_words
 
 def remove_duplicate_gamer_words(guild):
     words = []
     
-    with open('./{}_gamerwords.txt'.format(str(guild.id)), 'r+', encoding='utf-8') as f:
-        for line in f:
-            words.append(line.strip())
-        f.truncate(0)
+    f = open_gamer_words_file(guild.id, 'r+')
+
+    for line in f:
+        words.append(line.strip())
+    f.truncate(0)
 
     words = list(dict.fromkeys(words))
 
     add_moment(words, guild)
 
+def get_username_format(user):
+    return '{}#{}'.format(user.name, user.discriminator)
+
 @bot.command()
-async def getgamerwords(ctx):
+async def gamerwords(ctx):
     await ctx.send('Here are the gamer words for this server: {}'.format(str(get_all_gamer_words(ctx.guild))))
 
 @bot.command()
 async def moment(ctx, *args):
-    try:
-        quote = ''
-        if len(args) > 0:
-            id = args[0]
-            id = id.replace("<@!","")
-            id = id.replace(">","")
-            quote = get_gamer_moment_message(ctx.guild, id)
-        else:
-            quote = get_gamer_moment_message(ctx.guild, None)
+    quote = ''
+    if len(args) > 0:
+        # Remove all special characters
+        id = re.sub('[^0-9]', '', args[0])
+        quote = get_gamer_moment_message(ctx.guild.id, id)
+    else:
+        quote = get_gamer_moment_message(ctx.guild.id, None)
 
-        await ctx.send(quote)
-    except:
-        await ctx.send('Gamer moments are empty. Please create gamer moments using the command >makegamermoments :)')
+    await ctx.send(quote)
 
 @bot.command()
 async def add(ctx, *args):
@@ -76,34 +93,42 @@ async def makegamermoments(ctx):
     channel_messages = await ctx.history(limit=50000).flatten()
     data = {}
     gamer_moments_count = 0
-    with open('./{}_quotes.json'.format(str(ctx.guild.id)), 'w+', encoding='utf-8') as f:
-        for message in channel_messages:
+    gamermoments_file = open_gamer_moments_file(ctx.guild.id, 'w+')
 
-            if message.author == bot.user:
-                continue
+    for message in channel_messages:
+        if message.author == bot.user:
+            continue
 
-            if message.content.startswith('>'):
-                continue
+        if message.content.startswith('>'):
+            continue
 
-            if message.author.bot:
-                continue
+        if message.author.bot:
+            continue
 
-            with open('./{}_gamerwords.txt'.format(str(ctx.guild.id)), 'r+', encoding='utf-8') as f_:
-                for word in f_:
-                    if word.strip() in message.content:
-                        gamer_moments_count += 1
-                        string = '\"{}\" - {} {}/{}-{}'.format(message.content, message.author.name, message.created_at.day, message.created_at.month, message.created_at.year)
-                        if message.author.id not in data:
-                            data[message.author.id] = []
-                        data[message.author.id].append(string)
-        print(data)
-        json.dump(data, f)
+        gamerwords_file = open_gamer_words_file(ctx.guild.id, 'r+')
+        
+        for word in gamerwords_file:
+            if word.strip() in message.content:
+                gamer_moments_count += 1
+                user = message.author
+                
+                string = '\"{}\" - {} {}/{}-{}'.format(message.content, message.author.name, message.created_at.day, message.created_at.month, message.created_at.year)
+                if get_username_format(user) not in data:
+                    data[get_username_format(user)] = []
+                
+                data[get_username_format(user)].append(string)
+        
+        gamerwords_file.close()
+    
+    json.dump(data, gamermoments_file)
+
+    gamermoments_file.close()
 
     await ctx.send('できました！ {} gamer moments have been created :)'.format(gamer_moments_count))
 
 @bot.event
 async def on_command_error(ctx, exception):
-    await ctx.send('I am sorry, but an error occured :(. I don\'t understand special characters :(. If you used >makegamermoments, please try again, okay? hihi :)\nError: {}'.format(exception))
+    await ctx.send('Sorry, I made a mistake >_<... If you used >makegamermoments, please try again, okay? It\'s a very hard and demanding task...\nError: {}'.format(exception))
 
 
 @bot.event
