@@ -88,9 +88,11 @@ async def add(ctx, *args):
 
 @bot.command()
 async def makegamermoments(ctx):
+    amount = 50000
     remove_duplicate_gamer_words(ctx.guild)
     await ctx.send('Making epic gamer moments... Please wait. I will tell you when I am done, hihi :). That is if I don\'t crash... :). You can still use me while I am working, but I may be slow :(')
-    channel_messages = await ctx.history(limit=50000).flatten()
+    channel_messages = await ctx.history(limit=amount).flatten()
+    await ctx.send('Status: I have now received {} messages :). I humbly ask of you to wait just a little longer... Please... :). Also, please refrain from addings words until I have finished. :)'.format(len(channel_messages)))
     data = {}
     gamer_moments_count = 0
     gamermoments_file = open_gamer_moments_file(ctx.guild.id, 'w+')
