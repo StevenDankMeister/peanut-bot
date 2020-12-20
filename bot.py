@@ -14,18 +14,18 @@ def open_gamer_moments_file(guild_id, mode):
 def open_gamer_words_file(guild_id, mode):
     return open('./{}_gamerwords.txt'.format(str(guild_id)), mode, encoding='utf-8')
 
-def get_gamer_moment_message(guild_id, user_id):
+def get_gamer_moment_message(guild_id, user_name):
     f = open_gamer_moments_file(guild_id, 'r')
 
     moments_dic = json.load(f)
 
     gamer_moment_sentence = ''
 
-    if user_id == None:
+    if user_name == None:
         random_user_id = random.choice(list(moments_dic))
         gamer_moment_sentence = random.choice(moments_dic[random_user_id])
     else:
-        gamer_moment_sentence = random.choice(moments_dic[user_id]) 
+        gamer_moment_sentence = random.choice(moments_dic[user_name]) 
 
     f.close()
     return gamer_moment_sentence 
@@ -73,9 +73,8 @@ async def gamerwords(ctx):
 async def moment(ctx, *args):
     quote = ''
     if len(args) > 0:
-        # Remove all special characters
-        id = re.sub('[^0-9]', '', args[0])
-        quote = get_gamer_moment_message(ctx.guild.id, id)
+        user_name = args[0]
+        quote = get_gamer_moment_message(ctx.guild.id, user_name)
     else:
         quote = get_gamer_moment_message(ctx.guild.id, None)
 
