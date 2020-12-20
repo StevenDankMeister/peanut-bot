@@ -8,6 +8,7 @@ from datetime import datetime
 
 bot = commands.Bot(command_prefix='>')
 
+
 def open_gamer_moments_file(guild_id, mode):
     return open('./{}_quotes.json'.format(str(guild_id)), mode, encoding='utf-8')
 
@@ -67,67 +68,75 @@ def remove_duplicate_gamer_words(guild):
 def get_username_format(user):
     return '{}#{}'.format(user.name, user.discriminator)
 
-@bot.command()
-async def gamerwords(ctx):
-    await ctx.send('Here are the gamer words for this server: {}'.format(str(get_all_gamer_words(ctx.guild))))
-
-@bot.command()
-async def moment(ctx, *args):
-    quote = ''
-    if len(args) > 0:
-        user_name = args[0]
-        quote = get_gamer_moment_message(ctx.guild.id, user_name)
-    else:
-        quote = get_gamer_moment_message(ctx.guild.id, None)
-
-    await ctx.send(quote)
-
-@bot.command()
-async def add(ctx, *args):
-    add_moment(args, ctx.guild)
-    await ctx.send('Added {} new gamer words: {}'.format(len(args), ', '.join(args)))
-
-@bot.command()
-async def makegamermoments(ctx):
-    amount = 50000
-    remove_duplicate_gamer_words(ctx.guild)
-    await ctx.send('Making epic gamer moments... Please wait. I will tell you when I am done, hihi :). That is if I don\'t crash... :). You can still use me while I am working, but I may be slow :(')
-    channel_messages = await ctx.history(limit=amount).flatten()
-    await ctx.send('Status: I have now received {} messages :). I humbly ask of you to wait just a little longer... Please... :). Also, please refrain from addings words until I have finished. :)'.format(len(channel_messages)))
-    data = {}
-    gamer_moments_count = 0
-    gamermoments_file = open_gamer_moments_file(ctx.guild.id, 'w+')
-
-    for message in channel_messages:
-        if message.author == bot.user:
-            continue
-
-        if message.content.startswith('>'):
-            continue
-
-        if message.author.bot:
-            continue
-
-        gamerwords_file = open_gamer_words_file(ctx.guild.id, 'r+')
-        
-        for word in gamerwords_file:
-            if word.strip() in message.content:
-                gamer_moments_count += 1
-                user = message.author
-                
-                string = '\"{}\" - {} {}/{}-{}'.format(message.content, message.author.name, message.created_at.day, message.created_at.month, message.created_at.year)
-                if get_username_format(user) not in data:
-                    data[get_username_format(user)] = []
-                
-                data[get_username_format(user)].append(string)
-        
-        gamerwords_file.close()
+class GamerMoments(commands.Cog, name='Gamer Moments'):
+    def __init__(self, bot):
+        self.bot = bot
     
-    json.dump(data, gamermoments_file)
+    @commands.command()
+    async def add(self, ctx, *args):
+        """Add a gamer word"""
+        add_moment(args, ctx.guild)
+        await ctx.send('Added {} new gamer words: {}'.format(len(args), ', '.join(args)))
 
-    gamermoments_file.close()
+    @commands.command()
+    async def gamerwords(self, ctx):
+        """List all gamer words"""
+        await ctx.send('Here are the gamer words for this server: {}'.format(str(get_all_gamer_words(ctx.guild))))
 
-    await ctx.send('できました！ {} gamer moments have been created :)'.format(gamer_moments_count))
+    @commands.command()
+    async def moment(self, ctx, *args):
+        """Post a gamer moment from a random user. Pass a user's username#discriminator as a parameter to post gamer moment for a specific user."""
+        quote = ''
+        if len(args) > 0:
+            user_name = args[0]
+            quote = get_gamer_moment_message(ctx.guild.id, user_name)
+        else:
+            quote = get_gamer_moment_message(ctx.guild.id, None)
+
+        await ctx.send(quote)
+
+    @commands.command()
+    async def makegamermoments(self, ctx):
+        """Create a list of gamer moments. Messages are retrieved from the channel the command is run on. Expensive operation."""
+        amount = 50000
+        remove_duplicate_gamer_words(ctx.guild)
+        await ctx.send('Making epic gamer moments... Please wait. I will tell you when I am done, hihi :). That is if I don\'t crash... :). You can still use me while I am working, but I may be slow :(')
+        channel_messages = await ctx.history(limit=amount).flatten()
+        await ctx.send('Status: I have now received {} messages :). I humbly ask of you to wait just a little longer... Please... :). Also, please refrain from addings words until I have finished. :)'.format(len(channel_messages)))
+        data = {}
+        gamer_moments_count = 0
+        gamermoments_file = open_gamer_moments_file(ctx.guild.id, 'w+')
+
+        for message in channel_messages:
+            if message.author == bot.user:
+                continue
+
+            if message.content.startswith('>'):
+                continue
+
+            if message.author.bot:
+                continue
+
+            gamerwords_file = open_gamer_words_file(ctx.guild.id, 'r+')
+            
+            for word in gamerwords_file:
+                if word.strip() in message.content:
+                    gamer_moments_count += 1
+                    user = message.author
+                    
+                    string = '\"{}\" - {} {}/{}-{}'.format(message.content, message.author.name, message.created_at.day, message.created_at.month, message.created_at.year)
+                    if get_username_format(user) not in data:
+                        data[get_username_format(user)] = []
+                    
+                    data[get_username_format(user)].append(string)
+            
+            gamerwords_file.close()
+        
+        json.dump(data, gamermoments_file)
+
+        gamermoments_file.close()
+
+        await ctx.send('できました！ {} gamer moments have been created :)'.format(gamer_moments_count))
 
 @bot.event
 async def on_command_error(ctx, exception):
@@ -138,4 +147,5 @@ async def on_command_error(ctx, exception):
 async def on_ready():
     print('ready')
 
+bot.add_cog(GamerMoments(bot))
 bot.run(tokens.bot_token)
