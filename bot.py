@@ -56,8 +56,10 @@ def remove_duplicate_gamer_words(guild):
 
     for line in f:
         words.append(line.strip())
+    # clear the entire file
     f.truncate(0)
 
+    # remove duplicates
     words = list(dict.fromkeys(words))
 
     add_moment(words, guild)
