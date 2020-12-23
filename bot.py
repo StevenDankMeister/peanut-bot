@@ -42,7 +42,7 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
     @commands.command()
     async def makegamermoments(self, ctx, arg):
         """Create a list of gamer moments from a specific channel ID. Messages are retrieved from the channel the command is run on. Expensive operation. Overwrites previous gamer moments."""
-        amount = 20
+        amount = 50000
         gamer_moments.remove_duplicate_gamer_words(ctx.guild)
         
         channel = await bot.fetch_channel(arg)
