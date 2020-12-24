@@ -67,8 +67,8 @@ async def uptime(ctx):
     """Posts when the bot was started."""
     now = datetime.datetime.now()
     difference = now - bot.start_time
-    hours = difference.days * 24
-    minutes = difference.seconds // 60
+    hours = difference.seconds // 3600
+    minutes = (difference.seconds // 60) % 60
     seconds = difference.seconds % 60
 
     await ctx.send('I have been running since: {}. Time elapsed since start: {} hours, {} minutes and {} seconds.'
