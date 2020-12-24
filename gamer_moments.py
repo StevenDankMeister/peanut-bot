@@ -42,8 +42,12 @@ def get_gamer_moment_message(guild_id, user_name=None):
     gamer_moment_sentence = ''
 
     if user_name == None:
-        random_user_id = random.choice(list(moments_dic))
-        gamer_moment_sentence = random.choice(moments_dic[random_user_id])
+        # Prevent biased random by combining all arrays in the hash map to one array
+        all_quotes = []
+        for user_quotes in moments_dic.values():
+            all_quotes += user_quotes
+
+        gamer_moment_sentence = random.choice(all_quotes)
     else:
         gamer_moment_sentence = random.choice(moments_dic[user_name]) 
 
