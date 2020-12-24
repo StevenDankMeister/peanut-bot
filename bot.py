@@ -1,6 +1,7 @@
 import discord
 import bot_token as tokens
 import gamer_moments as gamer_moments
+import datetime
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix='>')
@@ -62,6 +63,18 @@ class GamerMoments(commands.Cog, name='Gamer Moments'):
         await ctx.send('できました！ {} gamer moments have been created :)'.format(gamer_moments_count))
 
 @bot.command()
+async def uptime(ctx):
+    """Posts when the bot was started."""
+    now = datetime.datetime.now()
+    difference = now - bot.start_time
+    hours = difference.days * 24
+    minutes = difference.seconds // 60
+    seconds = difference.seconds % 60
+
+    await ctx.send('I have been running since: {}. Time elapsed since start: {} hours, {} minutes and {} seconds.'
+                    .format(bot.start_time.strftime('%Y-%m-%d %H:%M:%S'), hours, minutes, seconds))
+
+@bot.command()
 async def github(ctx):
     """Posts the GitHub repository for this bot."""
     await ctx.send('You can find me at: https://github.com/StevenDankMeister/peanut-bot >_<')
@@ -70,10 +83,10 @@ async def github(ctx):
 async def on_command_error(ctx, exception):
     await ctx.send('Sorry, I made a mistake >_<... If you used >makegamermoments, please try again, okay? It\'s a very hard and demanding task...\nError: {}'.format(exception))
 
-
 @bot.event
 async def on_ready():
-    print('ready')
+    bot.start_time = datetime.datetime.now()
+    print('READY')
 
 bot.add_cog(GamerMoments(bot))
 bot.run(tokens.bot_token)
